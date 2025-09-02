@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ride & Delivery App</title>
+  <style>
+    body { margin:0; font-family: Arial, sans-serif; display:flex; height:100vh; background:linear-gradient(135deg,#ffafbd,#ffc3a0); }
+    .sidebar { width:220px; background:#ff4081; color:white; display:flex; flex-direction:column; padding:20px; }
+    .sidebar h2 { margin-bottom:20px; }
+    .sidebar button { margin:8px 0; padding:10px; border:none; border-radius:8px; cursor:pointer; background:#e73370; color:white; font-size:15px; transition:0.3s; }
+    .sidebar button:hover { background:#d12d66; }
+    .main-content { flex:1; padding:20px; overflow:auto; background:white; border-radius:12px; margin:15px; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+    form input { width:90%; padding:10px; margin:8px 0; border-radius:6px; border:1px solid #ccc; }
+    form button { width:95%; padding:10px; margin-top:10px; border:none; border-radius:6px; background:#ff4081; color:white; font-size:16px; cursor:pointer; }
+    form button:hover { background:#d12d66; }
+    .ride-box { border:1px solid #ccc; padding:10px; margin:10px 0; border-radius:8px; }
+    .ride-box button { margin-top:5px; }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <h2>RideApp</h2>
+    <button id="loginBtn">Login</button>
+    <button id="signupBtn">Sign Up</button>
+    <button id="homeBtn">Home</button>
+  </div>
+
+  <div class="main-content" id="content">
+    <h2>Welcome to Ride & Delivery App!</h2>
+    <p>Click Login or Sign Up to get started.</p>
+  </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const content = document.getElementById('content');
+
+      // Sidebar buttons
+      document.getElementById('loginBtn').addEventListener('click', () => showLoginChoice());
+      document.getElementById('signupBtn').addEventListener('click', () => showSignupChoice());
+      document.getElementById('homeBtn').addEventListener('click', () => showWelcome());
+
+      // ===== Welcome Page =====
+      function showWelcome(){
+        let user = JSON.parse(localStorage.getItem('loggedInUser'));
+        if(user){
+          if(user.type === "customer") showCustomerDashboard(user);
+          else if(user.type === "driver") showDriverDashboard(user);
+          return;
+        }
+        content.innerHTML = `
+          <h2>Welcome to Ride & Delivery App!</h2>
+          <p>Click Login or Sign Up to get started.</p>
+        `;
+      }
+
+      // ===== Signup Choice =====
+      function showSignupChoice(){
+        content.innerHTML = `
+          <h2>Sign Up</h2>
+          <button id="signupCustomerBtn">Customer Sign Up</button>
+          <button id="signupDriverBtn">Driver Sign Up</button>
+        `;
+        document.getElementById('signupCustomerBtn').addEventListener('click', () => showSignupForm('customer'));
+        document.getElementById('signupDriverBtn').addEventListener('click', () => showSignupForm('driver'));
+      }
+
+      // ===== Login Choice =====
+      function showLoginChoice(){
+        content.innerHTML = `
+          <h2>Login</h2>
+          <button id="loginCustomerBtn">Customer Login</button>
+          <button id="loginDriverBtn">Driver Login</button>
+        `;
+        document.getElementById('loginCustomerBtn').addEventListener('click', () => showLoginForm('customer'));
+        document.getElementById('loginDriverBtn').addEventListener('click', () => showLoginForm('driver'));
+      }
+
+      // ===== Signup Forms =====
+      function showSignupForm(type){
+        if(type === 'customer'){
+          content.innerHTML = `
+            <h2>Customer Sign Up</h2>
+            <form id="customerSignupForm">
+              <input type="text" placeholder="Full Name" required><br>
+              <input type="tel" placeholder="Mobile Number (10 digits)" required pattern="[0-9]{10}"><br>
+              <input type="password" placeholder="Password" required><br>
+              <button type="submit">Sign Up</button>
+            </form>
+          `;
+          document.getElementById('customerSignupForm').addEventListener('submit', submitCustomerSignup);
+        } else {
+          content.innerHTML = `
+            <h2>Driver Sign Up</h2>
+            <form id="driverSignupForm">
+              <input type="text" placeholder="Full Name" required><br>
+              <input type="tel" placeholder="Mobile Number (10 digits)" required pattern="[0-9]{10}"><br>
+              <input type="password" placeholder="Password" required><br>
+              <input type="text" placeholder="Vehicle Type" required><br>
+              <input type="text" placeholder="License Number" required><br>
+              <button type="submit">Sign Up</button>
+            </form>
+          `;
+          document.getElementById('driverSignupForm').addEventListener('submit', submitDriverSignup);
+        }
+      }
+
+      // ===== Login Forms =====
+      function showLoginForm(type){
+        if(type === 'customer'){
+          content.innerHTML = `
+            <h2>Customer Login</h2>
+            <form id="customerLoginForm">
+              <input type="tel" placeholder="Mobile Number" required pattern="[0-9]{10}"><br>
+              <input type="password" placeholder="Password" required><br>
+              <button type="submit">Login</button>
+            </form>
+          `;
+          document.getElementById('customerLoginForm').addEventListener('submit', submitCustomerLogin);
+        } else {
+          content.innerHTML = `
+            <h2>Driver Login</h2>
+            <form id="driverLoginForm">
+              <input type="tel" placeholder="Mobile Number" required pattern="[0-9]{10}"><br>
+              <input type="password" placeholder="Password" required><br>
+              <button type="submit">Login</button>
+            </form>
+          `;
+          document.getElementById('driverLoginForm').addEventListener('submit', submitDriverLogin);
+        }
+      }
+
+      // ===== Form Handlers =====
+      function submitCustomerSignup(e){
+        e.preventDefault();
+        const name = e.target[0].value;
+        const mobile = e.target[1].value;
+        const password = e.target[2].value;
+        let customers = JSON.parse(localStorage.getItem('customers') || '[]');
+        if(customers.find(c => c.mobile === mobile)){
+          alert('Customer with this mobile already exists!');
+          return;
+        }
+        customers.push({name, mobile, password});
+        localStorage.setItem('customers', JSON.stringify(customers));
+        alert('Customer signed up successfully!');
+        showWelcome();
+      }
+
+      function submitDriverSignup(e){
+        e.preventDefault();
+        const name = e.target[0].value;
+        const mobile = e.target[1].value;
+        const password = e.target[2].value;
+        const vehicle = e.target[3].value;
+        const license = e.target[4].value;
+        let drivers = JSON.parse(localStorage.getItem('drivers') || '[]');
+        if(drivers.find(d => d.mobile === mobile)){
+          alert('Driver with this mobile already exists!');
+          return;
+        }
+        drivers.push({name, mobile, password, vehicle, license});
+        localStorage.setItem('drivers', JSON.stringify(drivers));
+        alert('Driver signed up successfully!');
+        showWelcome();
+      }
+
+      function submitCustomerLogin(e){
+        e.preventDefault();
+        const mobile = e.target[0].value;
+        const password = e.target[1].value;
+        let customers = JSON.parse(localStorage.getItem('customers') || '[]');
+        const user = customers.find(c => c.mobile === mobile && c.password === password);
+        if(user){
+          localStorage.setItem('loggedInUser', JSON.stringify({type:"customer", ...user}));
+          showCustomerDashboard(user);
+        } else {
+          alert('Invalid credentials!');
+        }
+      }
+
+      function submitDriverLogin(e){
+        e.preventDefault();
+        const mobile = e.target[0].value;
+        const password = e.target[1].value;
+        let drivers = JSON.parse(localStorage.getItem('drivers') || '[]');
+        const user = drivers.find(d => d.mobile === mobile && d.password === password);
+        if(user){
+          localStorage.setItem('loggedInUser', JSON.stringify({type:"driver", ...user}));
+          showDriverDashboard(user);
+        } else {
+          alert('Invalid credentials!');
+        }
+      }
+
+      // ===== Dashboards =====
+      function showCustomerDashboard(user){
+        content.innerHTML = `
+          <h2>Welcome, ${user.name} (Customer)</h2>
+          <button id="bookRideBtn">Book Ride</button>
+          <button id="checkStatusBtn">Check Ride Status</button>
+          <button id="logoutBtn">Logout</button>
+        `;
+        document.getElementById('bookRideBtn').addEventListener('click', showRideBookingForm);
+        document.getElementById('checkStatusBtn').addEventListener('click', checkRideStatus);
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+      }
+
+      function showDriverDashboard(user){
+        content.innerHTML = `
+          <h2>Welcome, ${user.name} (Driver)</h2>
+          <button id="viewRidesBtn">View Ride Requests</button>
+          <button id="logoutBtn">Logout</button>
+        `;
+        document.getElementById('viewRidesBtn').addEventListener('click', viewRideRequests);
+        document.getElementById('logoutBtn').addEventListener('click', logout);
+      }
+
+      // ===== Ride Booking =====
+      function showRideBookingForm(){
+        content.innerHTML = `
+          <h2>Book a Ride</h2>
+          <form id="rideForm">
+            <input type="text" placeholder="Pickup Location" required><br>
+            <input type="text" placeholder="Drop Location" required><br>
+            <button type="submit">Submit Ride</button>
+          </form>
+          <button onclick="location.reload()">Back</button>
+        `;
+        document.getElementById('rideForm').addEventListener('submit', submitRideBooking);
+      }
+
+      function submitRideBooking(e){
+        e.preventDefault();
+        const pickup = e.target[0].value;
+        const drop = e.target[1].value;
+        let rides = JSON.parse(localStorage.getItem('rides') || '[]');
+        let user = JSON.parse(localStorage.getItem('loggedInUser'));
+        rides.push({customer:user.name, pickup, drop, status:"pending"});
+        localStorage.setItem('rides', JSON.stringify(rides));
+        alert('Ride request submitted!');
+        showCustomerDashboard(user);
+      }
+
+      // ===== Ride Status (Customer) =====
+      function checkRideStatus(){
+        let user = JSON.parse(localStorage.getItem('loggedInUser'));
+        let rides = JSON.parse(localStorage.getItem('rides') || '[]');
+        let myRide = rides.find(r => r.customer === user.name);
+        if(myRide){
+          content.innerHTML = `
+            <h2>Your Ride Status</h2>
+            <p>Pickup: ${myRide.pickup}</p>
+            <p>Drop: ${myRide.drop}</p>
+            <p>Status: ${myRide.status}</p>
+            <button onclick="location.reload()">Back</button>
+          `;
+        } else {
+          alert('No ride found!');
+          showCustomerDashboard(user);
+        }
+      }
+
+      // ===== Ride Requests (Driver) =====
+      function viewRideRequests(){
+        let rides = JSON.parse(localStorage.getItem('rides') || '[]');
+        if(rides.length === 0){
+          content.innerHTML = "<h2>No ride requests yet!</h2><button onclick='location.reload()'>Back</button>";
+          return;
+        }
+        content.innerHTML = "<h2>Ride Requests</h2>";
+        rides.forEach((ride,index) => {
+          if(ride.status === "pending"){
+            content.innerHTML += `
+              <div class="ride-box">
+                <p><b>Customer:</b> ${ride.customer}</p>
+                <p><b>Pickup:</b> ${ride.pickup}</p>
+                <p><b>Drop:</b> ${ride.drop}</p>
+                <p><b>Status:</b> ${ride.status}</p>
+                <button onclick="acceptRide(${index})">Accept Ride</button>
+              </div>
+            `;
+          }
+        });
+        content.innerHTML += "<button onclick='location.reload()'>Back</button>";
+      }
+
+      window.acceptRide = function(index){
+        let rides = JSON.parse(localStorage.getItem('rides') || '[]');
+        rides[index].status = "accepted";
+        localStorage.setItem('rides', JSON.stringify(rides));
+        alert('Ride accepted!');
+        location.reload();
+      }
+
+      // ===== Logout =====
+      function logout(){
+        localStorage.removeItem('loggedInUser');
+        showWelcome();
+      }
+
+      // Load welcome on start
+      showWelcome();
+    });
+  </script>
+
+</body>
+</html>
