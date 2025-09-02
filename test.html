@@ -1,0 +1,14 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <h2>JS Test</h2>
+    <button id="btn">Click me</button>
+    <script>
+      console.log('TEST: script loaded');
+      document.getElementById('btn').addEventListener('click', () => {
+        alert('Button clicked — JS is running!');
+        console.log('TEST: button clicked');
+      });
+    </script>
+  </body>
+</html>
